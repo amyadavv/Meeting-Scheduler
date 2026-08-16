@@ -4,10 +4,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    globalSetup: ['./tests/globalSetup.js'],
     setupFiles: ['./tests/setup.js'],
     testTimeout: 60000,
-    hookTimeout: 180000,
+    hookTimeout: 60000,
     fileParallelism: false,
     coverage: {
       provider: 'v8',

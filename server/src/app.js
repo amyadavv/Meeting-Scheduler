@@ -14,12 +14,18 @@ export const createApp = () => {
   // Security Headers
   app.use(helmet());
 
-  // CORS Configuration
+  // CORS Configuration - Supports local, production CLIENT_URL, and Vercel deployments
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, Postman) or matching frontend
-        if (!origin || origin === env.CLIENT_URL || env.isDevelopment || env.isTest) {
+        if (
+          !origin ||
+          origin === env.CLIENT_URL ||
+          origin.endsWith('.vercel.app') ||
+          origin.includes('localhost') ||
+          env.isDevelopment ||
+          env.isTest
+        ) {
           callback(null, true);
         } else {
           callback(new Error(`CORS blocked for origin: ${origin}`));

@@ -1,9 +1,17 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
+import dns from 'dns';
+import { env } from '../src/config/env.js';
+
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (dnsErr) {
+  // Ignore if custom DNS cannot be set
+}
 
 beforeAll(async () => {
-  if (process.env.MONGODB_URI && mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGODB_URI, {
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(env.MONGODB_URI, {
       autoIndex: true
     });
   }

@@ -1,5 +1,13 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
 import { env } from './env.js';
+
+// Resolve MongoDB SRV records reliably across Windows/custom DNS
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (dnsErr) {
+  // Ignore if custom DNS cannot be set
+}
 
 let isConnected = false;
 
@@ -42,9 +50,8 @@ export const connectDatabase = async (uri = env.MONGODB_URI) => {
 };
 
 export const disconnectDatabase = async () => {
-  if (!isConnected) {
-    return;
+  if (isConnected) {
+    await mongoose.disconnect();
+    isConnected = false;
   }
-  await mongoose.disconnect();
-  isConnected = false;
 };
