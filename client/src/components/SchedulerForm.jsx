@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Calendar, Clock, Sliders, Users, Sparkles } from 'lucide-react';
+import { Search, Calendar, Clock, Sliders, Users } from 'lucide-react';
 import { Button } from './common/Button.jsx';
 
 export const SchedulerForm = ({
@@ -8,13 +8,12 @@ export const SchedulerForm = ({
   onSearch,
   isLoading,
   selectedParticipantCount,
-  totalParticipantCount,
-  onSelectAll
+  totalParticipantCount
 }) => {
   const durationOptions = [
     { value: 15, label: '15 minutes' },
     { value: 30, label: '30 minutes' },
-    { value: 45, label: '45 minutes (Assignment Spec)' },
+    { value: 45, label: '45 minutes' },
     { value: 60, label: '60 minutes (1 hour)' },
     { value: 90, label: '90 minutes (1.5 hours)' },
     { value: 120, label: '120 minutes (2 hours)' }
@@ -25,18 +24,6 @@ export const SchedulerForm = ({
     { value: 30, label: '30 min increments' },
     { value: 60, label: '60 min increments' }
   ];
-
-  const handleApplyPreset = () => {
-    onChange({
-      startDate: '2026-03-08',
-      endDate: '2026-03-14',
-      durationMinutes: 45,
-      granularityMinutes: 15
-    });
-    if (onSelectAll) {
-      onSelectAll();
-    }
-  };
 
   return (
     <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 shadow-2xl relative overflow-hidden">
@@ -58,15 +45,6 @@ export const SchedulerForm = ({
             Specify target scheduling range, duration, and step granularity to calculate mutually open windows.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={handleApplyPreset}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 px-3.5 py-2 rounded-xl bg-blue-500/10 border border-blue-500/25 hover:bg-blue-500/20 hover:border-blue-500/40 transition-all self-start sm:self-auto shadow-sm"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          Load Assignment Spec (8–14 Mar 2026, 45m)
-        </button>
       </div>
 
       <form

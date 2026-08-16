@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, RefreshCw, UserPlus, Globe, Sparkles } from 'lucide-react';
+import { Clock, UserPlus, Globe } from 'lucide-react';
 import { Button } from './common/Button.jsx';
 
-export const Navbar = ({ onAddParticipant, onResetSeed, isResetting }) => {
+export const Navbar = ({ onAddParticipant }) => {
   const [utcTime, setUtcTime] = useState('');
 
   useEffect(() => {
@@ -31,9 +31,6 @@ export const Navbar = ({ onAddParticipant, onResetSeed, isResetting }) => {
                 <h1 className="text-base font-bold text-white tracking-tight">
                   Distributed Meeting Scheduler
                 </h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  Assignment Demo
-                </span>
               </div>
               <p className="text-xs text-slate-400">
                 Multi-Timezone Availability & Deterministic Slot Optimizer
@@ -48,18 +45,6 @@ export const Navbar = ({ onAddParticipant, onResetSeed, isResetting }) => {
               <Clock className="w-3.5 h-3.5 text-blue-400" />
               <span>{utcTime || 'Loading UTC...'}</span>
             </div>
-
-            {/* Reset to Assignment Scenario Button */}
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
-              isLoading={isResetting}
-              onClick={onResetSeed}
-              title="Resets data to Maya (Bangalore), Tom (London), Sara (SF), Jack (Sydney)"
-            >
-              Reset Seed Scenario
-            </Button>
 
             {/* Add Participant */}
             <Button

@@ -9,7 +9,7 @@ import { SlotResults } from './components/SlotResults.jsx';
 import { AlternativesCard } from './components/AlternativesCard.jsx';
 import { TimezoneMatrix } from './components/TimezoneMatrix.jsx';
 import { Alert } from './components/common/Alert.jsx';
-import { Users, Sparkles, Calendar, Layers, ShieldCheck } from 'lucide-react';
+import { Users, Calendar, Layers, ShieldCheck, UserPlus } from 'lucide-react';
 
 export default function App() {
   const [participants, setParticipants] = useState([]);
@@ -43,10 +43,9 @@ export default function App() {
   const [schedulingResults, setSchedulingResults] = useState(null);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isResetting, setIsResetting] = useState(false);
   const [alert, setAlert] = useState(null);
 
-  // 1. Fetch participants and their meetings
+  // 1. Fetch participants and their meetings from Database
   const loadData = useCallback(async () => {
     try {
       const participantList = await api.getParticipants();
@@ -57,7 +56,7 @@ export default function App() {
         prev.length > 0 ? prev : participantList.map((p) => p.id)
       );
 
-      // Fetch all meetings
+      // Fetch all meetings for all participants
       const meetingsData = {};
       await Promise.all(
         participantList.map(async (p) => {
@@ -119,63 +118,37 @@ export default function App() {
     } catch (err) {
       setAlert({
         type: 'error',
-        title: 'Scheduling Failed',
-        message: err.message || 'Unable to calculate meeting slots.'
+        title: 'Scheduling Error',
+        message: err.message || 'Failed to calculate meeting slots.'
       });
     } finally {
       setIsLoadingSlots(false);
     }
   };
 
-  // 3. Reset seed data to assignment defaults
-  const handleResetSeed = async () => {
-    try {
-      setIsResetting(true);
-      await api.seedDatabase(true);
-      await loadData();
-      setSearchParams({
-        startDate: '2026-03-08',
-        endDate: '2026-03-14',
-        durationMinutes: 45,
-        granularityMinutes: 15
-      });
-      setAlert({
-        type: 'success',
-        title: 'Scenario Reset',
-        message: 'Successfully restored 4 assignment participants: Maya (Bangalore), Tom (London), Sara (SF), Jack (Sydney).'
-      });
-      setSchedulingResults(null);
-    } catch (err) {
-      setAlert({
-        type: 'error',
-        title: 'Reset Failed',
-        message: err.message || 'Failed to reset seed data.'
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  // 4. Save participant (Create or Update)
-  const handleSaveParticipant = async (data) => {
-    if (participantToEdit) {
-      await api.updateParticipant(participantToEdit.id, data);
-      setAlert({ type: 'success', message: `Updated participant '${data.name}'.` });
-    } else {
-      await api.createParticipant(data);
-      setAlert({ type: 'success', message: `Added new participant '${data.name}'.` });
-    }
+  // 3. Create participant
+  const handleCreateParticipant = async (data) => {
+    const created = await api.createParticipant(data);
     await loadData();
+    setSelectedParticipantIds((prev) => [...prev, created.id]);
+    setAlert({ type: 'success', message: `Participant "${created.name}" created successfully.` });
   };
 
-  // 5. Delete participant
+  // 4. Update participant
+  const handleUpdateParticipant = async (id, data) => {
+    const updated = await api.updateParticipant(id, data);
+    await loadData();
+    setAlert({ type: 'success', message: `Participant "${updated.name}" updated successfully.` });
+  };
+
+  // 5. Delete participant (Deletes from MongoDB database and cascades meetings)
   const handleDeleteParticipant = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this participant?')) return;
+    if (!window.confirm('Are you sure you want to delete this participant from the database?')) return;
     try {
       await api.deleteParticipant(id);
       setSelectedParticipantIds((prev) => prev.filter((pId) => pId !== id));
       await loadData();
-      setAlert({ type: 'success', message: 'Participant deleted.' });
+      setAlert({ type: 'success', message: 'Participant deleted from database.' });
     } catch (err) {
       setAlert({ type: 'error', message: err.message || 'Failed to delete participant.' });
     }
@@ -185,7 +158,7 @@ export default function App() {
   const handleSaveMeeting = async (participantId, meetingData) => {
     await api.createMeeting(participantId, meetingData);
     await loadData();
-    setAlert({ type: 'success', message: 'Busy block logged successfully.' });
+    setAlert({ type: 'success', message: 'Busy block logged successfully in database.' });
   };
 
   // 7. Delete busy block
@@ -193,7 +166,7 @@ export default function App() {
     try {
       await api.deleteMeeting(meetingId);
       await loadData();
-      setAlert({ type: 'success', message: 'Busy block removed.' });
+      setAlert({ type: 'success', message: 'Busy block removed from database.' });
     } catch (err) {
       setAlert({ type: 'error', message: err.message || 'Failed to remove busy block.' });
     }
@@ -218,8 +191,6 @@ export default function App() {
           setParticipantToEdit(null);
           setIsParticipantModalOpen(true);
         }}
-        onResetSeed={handleResetSeed}
-        isResetting={isResetting}
       />
 
       {/* Main Container */}
@@ -252,17 +223,20 @@ export default function App() {
                 Global Distributed Team Coordinator
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Calculates exact meeting windows by projecting local working hours and pre-existing busy blocks into canonical UTC intervals <code className="text-blue-300">[start, end]</code> with full daylight-saving transition accuracy.
+                Calculates exact meeting windows by projecting local working hours and pre-existing busy blocks into canonical UTC intervals <code className="text-blue-300">[start, end)</code> with full daylight-saving transition accuracy.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={handleResetSeed}
-                className="px-4 py-2 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm"
+                onClick={() => {
+                  setParticipantToEdit(null);
+                  setIsParticipantModalOpen(true);
+                }}
+                className="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-all flex items-center gap-1.5 shadow-sm"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                Reset Assignment Data
+                <UserPlus className="w-3.5 h-3.5" />
+                Add Team Member
               </button>
             </div>
           </div>
@@ -276,7 +250,6 @@ export default function App() {
           isLoading={isLoadingSlots}
           selectedParticipantCount={selectedParticipantIds.length}
           totalParticipantCount={participants.length}
-          onSelectAll={handleSelectAll}
         />
 
         {/* 24-Hour Timezone Timeline Matrix */}
@@ -328,12 +301,16 @@ export default function App() {
             <div className="text-center py-12 bg-slate-900/40 rounded-2xl border border-slate-800">
               <Users className="w-10 h-10 text-slate-600 mx-auto mb-3" />
               <h4 className="text-sm font-semibold text-white">No participants found</h4>
-              <p className="text-xs text-slate-400 mt-1">Click below to load the default assignment scenario.</p>
+              <p className="text-xs text-slate-400 mt-1">Add your team members to start calculating meeting slots.</p>
               <button
-                onClick={handleResetSeed}
-                className="mt-4 px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
+                onClick={() => {
+                  setParticipantToEdit(null);
+                  setIsParticipantModalOpen(true);
+                }}
+                className="mt-4 px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white inline-flex items-center gap-1.5"
               >
-                Load Default Scenario
+                <UserPlus className="w-3.5 h-3.5" />
+                Add Your First Participant
               </button>
             </div>
           ) : (
@@ -370,43 +347,48 @@ export default function App() {
               <p className="text-xs text-slate-400 mt-1">Intersecting working hours and applying DST conversions.</p>
             </div>
           ) : schedulingResults ? (
-            schedulingResults.hasUniversalSlots ? (
+            schedulingResults.slots.length > 0 ? (
               <SlotResults
-                results={schedulingResults}
-                durationMinutes={searchParams.durationMinutes}
+                slots={schedulingResults.slots}
+                metrics={schedulingResults.metrics}
               />
             ) : (
               <AlternativesCard
+                diagnostics={schedulingResults.diagnostics}
                 alternatives={schedulingResults.alternatives}
-                durationMinutes={searchParams.durationMinutes}
               />
             )
-          ) : (
-            <div className="text-center py-12 bg-slate-900/30 rounded-2xl border border-slate-800/60 text-slate-400 text-xs">
-              Configure parameters above and click <strong className="text-blue-400">Calculate Optimal Meeting Slots</strong> to view suggested times.
-            </div>
-          )}
+          ) : null}
         </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+        Distributed Meeting Scheduler • Enterprise Full-Stack Availability Engine
+      </footer>
 
       {/* Modals */}
       <ParticipantModal
         isOpen={isParticipantModalOpen}
-        onClose={() => {
-          setIsParticipantModalOpen(false);
-          setParticipantToEdit(null);
+        onClose={() => setIsParticipantModalOpen(false)}
+        onSave={async (data) => {
+          if (participantToEdit) {
+            await handleUpdateParticipant(participantToEdit.id, data);
+          } else {
+            await handleCreateParticipant(data);
+          }
         }}
-        onSave={handleSaveParticipant}
         participantToEdit={participantToEdit}
       />
 
       <MeetingModal
         isOpen={isMeetingModalOpen}
-        onClose={() => {
-          setIsMeetingModalOpen(false);
-          setMeetingTargetParticipant(null);
+        onClose={() => setIsMeetingModalOpen(false)}
+        onSave={async (meetingData) => {
+          if (meetingTargetParticipant) {
+            await handleSaveMeeting(meetingTargetParticipant.id, meetingData);
+          }
         }}
-        onSave={handleSaveMeeting}
         participant={meetingTargetParticipant}
       />
     </div>
