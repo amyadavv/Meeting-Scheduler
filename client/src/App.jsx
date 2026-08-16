@@ -87,7 +87,23 @@ export default function App() {
     loadData();
   }, [loadData]);
 
-  // 2. Scheduling search execution with auto-scroll
+  // Butter-smooth 60fps auto-scroll when new results arrive
+  useEffect(() => {
+    if (schedulingResults && resultsRef.current) {
+      requestAnimationFrame(() => {
+        const navHeight = 80;
+        const rect = resultsRef.current.getBoundingClientRect();
+        const targetY = window.pageYOffset + rect.top - navHeight;
+
+        window.scrollTo({
+          top: Math.max(0, targetY),
+          behavior: 'smooth'
+        });
+      });
+    }
+  }, [schedulingResults]);
+
+  // 2. Scheduling search execution
   const executeSearch = async () => {
     if (selectedParticipantIds.length === 0) {
       setAlert({
@@ -111,11 +127,6 @@ export default function App() {
       setIsLoadingSlots(true);
       setAlert(null);
 
-      // Smooth scroll down immediately to the results area
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
-
       const res = await api.findSlots({
         participantIds: selectedParticipantIds,
         startDate: searchParams.startDate,
@@ -124,11 +135,6 @@ export default function App() {
         granularityMinutes: searchParams.granularityMinutes
       });
       setSchedulingResults(res);
-
-      // Ensure view stays smoothly focused on results once loaded
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
     } catch (err) {
       setAlert({
         type: 'error',
