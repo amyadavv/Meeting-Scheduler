@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from './api/client.js';
 import { Navbar } from './components/Navbar.jsx';
 import { ParticipantCard } from './components/ParticipantCard.jsx';
@@ -21,6 +21,9 @@ export default function App() {
   const [participantToEdit, setParticipantToEdit] = useState(null);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [meetingTargetParticipant, setMeetingTargetParticipant] = useState(null);
+
+  // Ref for auto-scrolling to results
+  const resultsRef = useRef(null);
 
   // Helper for today's date formatted as YYYY-MM-DD
   const getTodayDateString = () => {
@@ -84,7 +87,7 @@ export default function App() {
     loadData();
   }, [loadData]);
 
-  // 2. Scheduling search execution
+  // 2. Scheduling search execution with auto-scroll
   const executeSearch = async () => {
     if (selectedParticipantIds.length === 0) {
       setAlert({
@@ -107,6 +110,12 @@ export default function App() {
     try {
       setIsLoadingSlots(true);
       setAlert(null);
+
+      // Smooth scroll down immediately to the results area
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+
       const res = await api.findSlots({
         participantIds: selectedParticipantIds,
         startDate: searchParams.startDate,
@@ -115,6 +124,11 @@ export default function App() {
         granularityMinutes: searchParams.granularityMinutes
       });
       setSchedulingResults(res);
+
+      // Ensure view stays smoothly focused on results once loaded
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch (err) {
       setAlert({
         type: 'error',
@@ -338,8 +352,8 @@ export default function App() {
           )}
         </section>
 
-        {/* Suggested Slots / Diagnostics Results Area */}
-        <section className="space-y-6">
+        {/* Suggested Slots / Diagnostics Results Area (with ref for auto-scroll) */}
+        <section ref={resultsRef} id="results-section" className="space-y-6 scroll-mt-24">
           {isLoadingSlots ? (
             <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-slate-800/80">
               <div className="inline-block animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-3" />
