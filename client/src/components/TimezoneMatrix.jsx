@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Clock, MapPin, Eye, Calendar, Sparkles, User } from 'lucide-react';
+import { Clock, MapPin, Eye, Calendar, Sparkles, User, AlertCircle } from 'lucide-react';
 import { Badge } from './common/Badge.jsx';
 
-export const TimezoneMatrix = ({ participants = [] }) => {
+export const TimezoneMatrix = ({ participants = [], meetingsMap = {}, selectedDate = '2026-03-09' }) => {
   if (!participants || participants.length === 0) return null;
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -26,7 +26,7 @@ export const TimezoneMatrix = ({ participants = [] }) => {
 
   return (
     <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 shadow-xl space-y-5">
-      {/* Header */}
+      {/* Header with Legends */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -34,14 +34,19 @@ export const TimezoneMatrix = ({ participants = [] }) => {
             24-Hour Working Window Matrix (UTC Overview)
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Visual alignment of each participant's local working hours relative to UTC.
+            Visual alignment of each participant's working availability and busy blocks relative to UTC.
           </p>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs">
           <span className="flex items-center gap-1.5 text-slate-300 font-medium">
             <span className="w-3 h-3 rounded-sm bg-emerald-500/80 border border-emerald-400 inline-block shadow-sm shadow-emerald-500/30" />
-            Working Hours
+            Available (Working)
+          </span>
+          <span className="flex items-center gap-1.5 text-amber-300 font-medium">
+            <span className="w-3 h-3 rounded-sm bg-amber-500/80 border border-amber-400 inline-block shadow-sm shadow-amber-500/30" />
+            Busy Block
           </span>
           <span className="flex items-center gap-1.5 text-slate-400">
             <span className="w-3 h-3 rounded-sm bg-slate-800/80 border border-slate-700 inline-block" />
@@ -93,6 +98,8 @@ export const TimezoneMatrix = ({ participants = [] }) => {
             const startUtcHour = Math.floor((startH - offset + 24) % 24);
             const endUtcHour = Math.floor((endH - offset + 24) % 24);
 
+            const participantMeetings = meetingsMap[p.id] || [];
+
             return (
               <div
                 key={p.id}
@@ -105,12 +112,17 @@ export const TimezoneMatrix = ({ participants = [] }) => {
                       {p.name}
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono flex items-center gap-0.5">
-                      <MapPin className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                      <MapPin className="w-3 h-3 text-rose-400 flex-shrink-0" />
                       {p.location}
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                    {p.availability?.startTime}–{p.availability?.endTime} ({p.timezone.split('/')[1] || p.timezone})
+                  <div className="text-[10px] text-slate-400 truncate mt-0.5 flex items-center justify-between">
+                    <span>{p.availability?.startTime}–{p.availability?.endTime}</span>
+                    {participantMeetings.length > 0 && (
+                      <span className="text-amber-400 font-medium">
+                        {participantMeetings.length} busy
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -128,23 +140,49 @@ export const TimezoneMatrix = ({ participants = [] }) => {
                       isWorking = h >= startUtcHour || h < endUtcHour;
                     }
 
+                    // Check if this hour overlaps with any logged meeting/busy block
+                    const conflictingMeeting = participantMeetings.find((m) => {
+                      const mStart = new Date(m.startTime);
+                      const mEnd = new Date(m.endTime);
+                      const mStartHour = mStart.getUTCHours();
+                      const mEndHour = mEnd.getUTCHours() || 24;
+                      return h >= mStartHour && h < mEndHour;
+                    });
+
+                    const isBusy = Boolean(conflictingMeeting);
                     const isHovered = hoveredHour === h;
+
+                    let blockClass = 'bg-slate-900/80 text-slate-600 border border-slate-800/90 hover:border-slate-700';
+                    let symbol = '';
+
+                    if (isBusy) {
+                      blockClass = 'bg-amber-500/30 text-amber-300 border border-amber-500/60 hover:bg-amber-500/40 shadow-sm shadow-amber-500/20';
+                      symbol = '✕';
+                    } else if (isWorking) {
+                      blockClass = 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/40 shadow-sm';
+                      symbol = '●';
+                    }
+
+                    let tooltip = `${p.name} at ${h.toString().padStart(2, '0')}:00 UTC: `;
+                    if (isBusy) {
+                      tooltip += `BUSY [${conflictingMeeting.title}]`;
+                    } else if (isWorking) {
+                      tooltip += 'Available (Working Hours)';
+                    } else {
+                      tooltip += 'Off-Hours / Sleeping';
+                    }
 
                     return (
                       <div
                         key={h}
                         onMouseEnter={() => setHoveredHour(h)}
                         onMouseLeave={() => setHoveredHour(null)}
-                        className={`h-7 rounded transition-all flex items-center justify-center cursor-pointer text-[10px] font-mono select-none ${
-                          isWorking
-                            ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/40 shadow-sm'
-                            : 'bg-slate-900/80 text-slate-600 border border-slate-800/90 hover:border-slate-700'
-                        } ${isHovered ? 'ring-2 ring-blue-400 scale-105 z-10' : ''}`}
-                        title={`${p.name} at ${h.toString().padStart(2, '0')}:00 UTC: ${
-                          isWorking ? 'Available (Working Hours)' : 'Off-Hours'
+                        className={`h-7 rounded transition-all flex items-center justify-center cursor-pointer text-[10px] font-mono select-none ${blockClass} ${
+                          isHovered ? 'ring-2 ring-blue-400 scale-105 z-10' : ''
                         }`}
+                        title={tooltip}
                       >
-                        {isWorking ? '●' : ''}
+                        {symbol}
                       </div>
                     );
                   })}
@@ -160,7 +198,7 @@ export const TimezoneMatrix = ({ participants = [] }) => {
         <div className="flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-blue-400" />
           <span>
-            Hover over any hour column to inspect global alignment at that UTC hour.
+            Hover over any hour cell to view working hours and busy block commitments in UTC.
           </span>
         </div>
         <div className="text-[11px] text-slate-400 font-mono">

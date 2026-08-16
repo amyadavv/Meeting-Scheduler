@@ -262,7 +262,11 @@ export default function App() {
         />
 
         {/* 24-Hour Timezone Timeline Matrix */}
-        <TimezoneMatrix participants={participants} />
+        <TimezoneMatrix
+          participants={participants}
+          meetingsMap={meetingsMap}
+          selectedDate={searchParams.startDate}
+        />
 
         {/* Participants Grid Section */}
         <section className="space-y-4">
