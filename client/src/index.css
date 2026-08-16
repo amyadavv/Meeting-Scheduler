@@ -3,10 +3,22 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
-    background-color: #0f172a;
+    background-color: #030712;
     color: #f8fafc;
     font-family: 'Inter', sans-serif;
+  }
+
+  /* Sleek modern dark date and time pickers */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  select {
+    color-scheme: dark;
   }
 }
 
@@ -17,7 +29,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #0f172a;
 }
 
 ::-webkit-scrollbar-thumb {
