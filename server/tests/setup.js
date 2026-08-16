@@ -12,7 +12,9 @@ try {
 beforeAll(async () => {
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(env.MONGODB_URI, {
-      autoIndex: true
+      autoIndex: true,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000
     });
   }
 });
@@ -26,8 +28,8 @@ afterAll(async () => {
 beforeEach(async () => {
   if (mongoose.connection.readyState === 1) {
     const collections = mongoose.connection.collections;
-    for (const key of Object.keys(collections)) {
-      await collections[key].deleteMany({});
-    }
+    await Promise.all(
+      Object.keys(collections).map((key) => collections[key].deleteMany({}))
+    );
   }
 });

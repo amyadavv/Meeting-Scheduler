@@ -349,13 +349,13 @@ export default function App() {
           ) : schedulingResults ? (
             schedulingResults.slots.length > 0 ? (
               <SlotResults
-                slots={schedulingResults.slots}
-                metrics={schedulingResults.metrics}
+                results={schedulingResults}
+                durationMinutes={searchParams.durationMinutes}
               />
             ) : (
               <AlternativesCard
-                diagnostics={schedulingResults.diagnostics}
                 alternatives={schedulingResults.alternatives}
+                durationMinutes={searchParams.durationMinutes}
               />
             )
           ) : null}

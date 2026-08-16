@@ -4,10 +4,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./tests/setup.js'],
     testTimeout: 60000,
     hookTimeout: 60000,
     fileParallelism: false,
+    maxConcurrency: 1,
+    sequence: {
+      concurrent: false
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
+import '../setup.js';
 import { app } from '../../src/app.js';
 import { Participant } from '../../src/models/Participant.js';
 import { Meeting } from '../../src/models/Meeting.js';

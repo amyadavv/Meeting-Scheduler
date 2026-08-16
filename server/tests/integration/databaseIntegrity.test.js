@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import mongoose from 'mongoose';
+import '../setup.js';
 import { Participant } from '../../src/models/Participant.js';
 import { Meeting } from '../../src/models/Meeting.js';
 
