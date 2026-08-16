@@ -384,9 +384,11 @@ export default function App() {
       <MeetingModal
         isOpen={isMeetingModalOpen}
         onClose={() => setIsMeetingModalOpen(false)}
-        onSave={async (meetingData) => {
-          if (meetingTargetParticipant) {
-            await handleSaveMeeting(meetingTargetParticipant.id, meetingData);
+        onSave={async (arg1, arg2) => {
+          const payload = (arg2 && typeof arg2 === 'object') ? arg2 : arg1;
+          const targetId = (arg2 && typeof arg1 === 'string' ? arg1 : null) || meetingTargetParticipant?.id;
+          if (targetId && payload) {
+            await handleSaveMeeting(targetId, payload);
           }
         }}
         participant={meetingTargetParticipant}

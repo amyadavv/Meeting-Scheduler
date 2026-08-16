@@ -1,35 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from './common/Modal.jsx';
 import { Button } from './common/Button.jsx';
 import { Alert } from './common/Alert.jsx';
 
 export const MeetingModal = ({ isOpen, onClose, onSave, participant }) => {
-  const [title, setTitle] = useState('Client Review Sync');
-  const [startDate, setStartDate] = useState('2026-03-09');
-  const [startTime, setStartTime] = useState('13:00');
-  const [endDate, setEndDate] = useState('2026-03-09');
-  const [endTime, setEndTime] = useState('14:00');
+  const getTodayDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [title, setTitle] = useState('');
+  const [startDate, setStartDate] = useState(getTodayDateString());
+  const [startTime, setStartTime] = useState('09:00');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('10:00');
 
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Helper to calculate 1 hour after a given time string (HH:mm)
+  const addOneHour = (timeStr) => {
+    if (!timeStr) return '10:00';
+    const [h, m] = timeStr.split(':').map(Number);
+    const newH = (h + 1) % 24;
+    return `${String(newH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+  };
+
+  // Reset form with today's date whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTitle('');
+      setStartDate(getTodayDateString());
+      setStartTime('09:00');
+      setEndDate('');
+      setEndTime('10:00');
+      setError(null);
+    }
+  }, [isOpen]);
+
   if (!participant) return null;
+
+  const handleStartTimeChange = (newStartTime) => {
+    setStartTime(newStartTime);
+    // If end date is same as start date (or empty), automatically keep end time 1 hour after start time
+    if (!endDate || endDate === startDate) {
+      setEndTime(addOneHour(newStartTime));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    const startIso = new Date(`${startDate}T${startTime}:00Z`).toISOString();
-    const endIso = new Date(`${endDate}T${endTime}:00Z`).toISOString();
+    if (!startDate) {
+      setError('Please select a Start Date.');
+      return;
+    }
 
-    if (new Date(startIso).getTime() >= new Date(endIso).getTime()) {
+    const effectiveEndDate = endDate.trim() ? endDate.trim() : startDate;
+
+    const padTime = (t) => {
+      if (!t) return '00:00:00';
+      const parts = t.split(':');
+      const h = parts[0].padStart(2, '0');
+      const m = (parts[1] || '00').padStart(2, '0');
+      const s = (parts[2] || '00').padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    };
+
+    const startIso = new Date(`${startDate}T${padTime(startTime)}Z`).toISOString();
+    const endIso = new Date(`${effectiveEndDate}T${padTime(endTime)}Z`).toISOString();
+
+    const startMs = new Date(startIso).getTime();
+    const endMs = new Date(endIso).getTime();
+
+    if (isNaN(startMs) || isNaN(endMs)) {
+      setError('Please provide valid date and time values.');
+      return;
+    }
+
+    if (startMs >= endMs) {
       setError('Meeting end time must be strictly after start time.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await onSave(participant.id, {
+      await onSave({
         title: title.trim() || 'Busy Block',
         startTime: startIso,
         endTime: endIso
@@ -65,7 +125,7 @@ export const MeetingModal = ({ isOpen, onClose, onSave, participant }) => {
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. 1:1 Sync, Doctor Appointment"
+            placeholder="e.g. 1:1 Sync, Client Review, Doctor Appointment"
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
           />
         </div>
@@ -91,7 +151,7 @@ export const MeetingModal = ({ isOpen, onClose, onSave, participant }) => {
               type="time"
               required
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={(e) => handleStartTimeChange(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -100,11 +160,10 @@ export const MeetingModal = ({ isOpen, onClose, onSave, participant }) => {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              End Date (UTC)
+              End Date (UTC) <span className="text-slate-500 text-[10px] font-normal">(optional, defaults to start date)</span>
             </label>
             <input
               type="date"
-              required
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"

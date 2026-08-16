@@ -9,8 +9,12 @@ export const createMeetingSchema = z
       .regex(objectIdRegex, 'Invalid participant ID format')
       .optional(),
     title: z.string().trim().min(1, 'Title cannot be empty').max(200).default('Busy Block'),
-    startTime: z.string().datetime({ message: 'startTime must be a valid ISO-8601 date string' }),
-    endTime: z.string().datetime({ message: 'endTime must be a valid ISO-8601 date string' })
+    startTime: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
+      message: 'startTime must be a valid ISO-8601 date string'
+    }),
+    endTime: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
+      message: 'endTime must be a valid ISO-8601 date string'
+    })
   })
   .refine((data) => new Date(data.startTime).getTime() < new Date(data.endTime).getTime(), {
     message: 'Meeting endTime must be strictly after startTime',
