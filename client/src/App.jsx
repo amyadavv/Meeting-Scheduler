@@ -22,10 +22,19 @@ export default function App() {
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [meetingTargetParticipant, setMeetingTargetParticipant] = useState(null);
 
-  // Search parameters - Assignment Default: 8–14 March 2026, 45 minutes
+  // Helper for today's date formatted as YYYY-MM-DD
+  const getTodayDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Search parameters - Defaults to Today's date with empty End Date
   const [searchParams, setSearchParams] = useState({
-    startDate: '2026-03-08',
-    endDate: '2026-03-14',
+    startDate: getTodayDateString(),
+    endDate: '',
     durationMinutes: 45,
     granularityMinutes: 15
   });
@@ -83,6 +92,15 @@ export default function App() {
         type: 'warning',
         title: 'Selection Required',
         message: 'Please select at least one participant to calculate meeting slots.'
+      });
+      return;
+    }
+
+    if (!searchParams.startDate || !searchParams.endDate) {
+      setAlert({
+        type: 'warning',
+        title: 'Date Range Required',
+        message: 'Please specify both a Start Date and an End Date.'
       });
       return;
     }
@@ -224,24 +242,24 @@ export default function App() {
             <div className="space-y-1.5 max-w-3xl">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 inline-flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Production Spec
+                  <ShieldCheck className="w-3.5 h-3.5" /> Enterprise Scheduler
                 </span>
                 <span className="text-xs text-slate-400 font-mono">
-                  Target Window: 8–14 March 2026 (45 min)
+                  Multi-Timezone Engine
                 </span>
               </div>
               <h2 className="text-xl font-extrabold text-white tracking-tight">
                 Global Distributed Team Coordinator
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Calculates exact meeting windows by projecting local working hours and pre-existing busy blocks into canonical UTC intervals <code className="text-blue-300">[start, end)</code> with full daylight-saving transition accuracy (such as US Spring Forward on March 8, 2026).
+                Calculates exact meeting windows by projecting local working hours and pre-existing busy blocks into canonical UTC intervals <code className="text-blue-300">[start, end]</code> with full daylight-saving transition accuracy.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={handleResetSeed}
-                className="px-4 py-2 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 shadow-sm"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 Reset Assignment Data
