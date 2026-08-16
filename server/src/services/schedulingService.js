@@ -271,7 +271,7 @@ export const schedulingService = {
         );
 
         if (subsetSlots.length > 0) {
-          const sampleSlots = subsetSlots.slice(0, 5).map((slot) => {
+          const sampleSlots = subsetSlots.map((slot) => {
             const participantTimes = includedParticipants.map((p) => {
               const localRange = formatLocalInterval(slot.start, slot.end, p.timezone);
               return {

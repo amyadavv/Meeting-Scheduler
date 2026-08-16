@@ -120,9 +120,9 @@ export const AlternativesCard = ({ alternatives, durationMinutes = 45 }) => {
                   </div>
                 </div>
 
-                {/* Sample Slots for this subset */}
+                {/* All Suggested Slots for this subset */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {subset.suggestedSlots.slice(0, 4).map((slot, sIdx) => {
+                  {subset.suggestedSlots.map((slot, sIdx) => {
                     const utcStart = new Date(slot.startUtc).toUTCString().slice(0, 22);
                     const utcEnd = new Date(slot.endUtc).toUTCString().slice(17, 22);
 
