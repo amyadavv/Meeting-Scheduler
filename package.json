@@ -1,0 +1,26 @@
+{
+  "name": "meeting-scheduler-monorepo",
+  "version": "1.0.0",
+  "description": "Production-grade Full-Stack Distributed Meeting Scheduler",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build:client": "npm run build --prefix client",
+    "build": "npm run build:client",
+    "test": "npm test --prefix server",
+    "test:watch": "npm run test:watch --prefix server",
+    "test:coverage": "npm run test:coverage --prefix server",
+    "seed": "npm run seed --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Distributed Systems Engineering Team",
+  "license": "ISC"
+}
